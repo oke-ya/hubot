@@ -25,7 +25,8 @@
     "hubot-hipchat": "~2.6.4",
     "aws-sdk": "~2.0.0-rc8",
     "underscore": "~1.5.2",
-    "q": "~1.0.0"
+    "q": "~1.0.0",
+    "mocha": "~1.17.1"
   },
   "engines": {
     "node": ">= 0.8.x",
