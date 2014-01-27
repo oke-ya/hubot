@@ -8,6 +8,8 @@
 #   hubot admin <app> - Invoke admin server on the app.
 
 OpsWorks = require("../lib/opsworks")
+ssh      = require('ssh2')
+_        = require('underscore')
 
 module.exports = (robot) ->
   face = {
@@ -56,6 +58,24 @@ module.exports = (robot) ->
     .fail (err) ->
       msg.send "エラーですぅ #{face.failure} #{err.message}"
     .then (app) ->
-      app.instances()
+      app.instances().then (instances) ->
+        instance = _.find instances, (instance) -> instance.Status == 'online'
+        session = new ssh()
+        session.on 'ready', () ->
+          session.exec "cd /srv/www/#{app.Name}/current && nohup bundle exec rails s", (err, stream) ->
+            stream.on 'data', (data, extended) ->
+              console.log extended
+              console.log data.toString()
+            stream.on 'close', () ->
+              msg.send "$ ssh -N -L 8888:localhost:3000 deploy@#{instance.PublicIp} を起動して"
+              msg.send "http://localhost:8888/admin にアクセスだ! （｀・ω・´）"
+
+        session.connect
+          host: instance.PublicIp
+          port: 22
+          username: 'deploy'
+          privateKey: process.env["HUBOT_PRIVATE_KEY"]
+
+        
     
 
