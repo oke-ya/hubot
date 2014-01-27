@@ -12,5 +12,8 @@ module.exports = (robot) ->
   robot.respond /DEPLOY (.*)$/i, (msg) ->
     app = msg.match[1]
     OpsWorks.use(app).then (app) ->
-      app.createDeploy()
-    
+      app.deploy().then (result) ->
+        if result.DeploymentId
+          msg.send "デプロイしてます(*´▽｀*) id: #{result.DeploymentId}"
+        else
+          msg.send "デプロイできません ><"
