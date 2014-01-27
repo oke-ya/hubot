@@ -33,27 +33,37 @@ class OpsWorks
     deferred = Q.defer()
     OpsWorks.getStacks().then (stacks) ->
       params = (_.find stacks, (stack) -> stack["Name"] == name)
-      deferred.resolve new OpsWorks(params)
+      OpsWorks.api.describeApps {StackId: params.StackId}, (err, data) ->
+        deferred.resolve new OpsWorks(params, data["Apps"][0])
+
     return deferred.promise
 
-  constructor: (params) ->
+  constructor: (stack, app) ->
     self = @
-    for k, v of params
+    for k, v of stack
+      self[k] = v
+    for k, v of app
       self[k] = v
 
   deploy: () ->
+    deferred = Q.defer()
     unless @StackId
       deferred.reject(new Error("stackID is missing"))
       return
-
-    deferred = Q.defer()
-    stackId = @StackId
-    OpsWorks.api.describeApps {StackId: stackId}, (err, data) ->
-      appId = data.Apps[0].AppId
-      params = {AppId: appId, StackId: stackId, Command: {Name: 'deploy'}}
-      OpsWorks.api.createDeployment params, (err, data) ->
-        deferred.reject err if err
+    params = {AppId: @AppId, StackId: @StackId, Command: {Name: 'deploy'}}
+    OpsWorks.api.createDeployment params, (err, data) ->
+      if err
+        deferred.reject err
+      else
         deferred.resolve data
+    deferred.promise
+
+  deployStatus: (num) ->
+    num ?= 0
+    deferred = Q.defer()
+    OpsWorks.api.describeDeployments {AppId: @AppId}, (err, data) ->
+      deferred.reject err if err
+      deferred.resolve data["Deployments"][0..num]
     deferred.promise
 
 module.exports = OpsWorks
