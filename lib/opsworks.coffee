@@ -17,24 +17,30 @@ class OpsWorks
       OpsWorks.api.describeStacks({}, (err, data) ->
         if (err)
           deferred.reject(err)
-          return
-        OpsWorks.stacks = data['Stacks']
-        deferred.resolve OpsWorks.stacks
+        else
+          OpsWorks.stacks = data['Stacks']
+          deferred.resolve OpsWorks.stacks
       )
     deferred.promise
 
   @getApps = () ->
     deferred = Q.defer()
-    OpsWorks.getStacks().then (stacks) ->
+    OpsWorks.getStacks()
+    .then (stacks) ->
       deferred.resolve (_.map stacks, (stack) -> stack["Name"])
+    .fail (err) ->
+      deferred.reject err
     return deferred.promise
 
   @use = (name) ->
     deferred = Q.defer()
-    OpsWorks.getStacks().then (stacks) ->
+    OpsWorks.getStacks()
+    .then (stacks) ->
       params = (_.find stacks, (stack) -> stack["Name"] == name)
       OpsWorks.api.describeApps {StackId: params.StackId}, (err, data) ->
         deferred.resolve new OpsWorks(params, data["Apps"][0])
+    .fail (err) ->
+      deferred.reject err
 
     return deferred.promise
 

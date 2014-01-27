@@ -20,7 +20,10 @@ module.exports = (robot) ->
   
   robot.respond /DEPLOY (.*)$/i, (msg) ->
     app = msg.match[1]
-    OpsWorks.use(app).then (app) ->
+    OpsWorks.use(app)
+    .fail (err) ->
+      msg.send "エラーですぅ #{face.failure} #{err.message}"
+    .then (app) ->
       app.deploy().then (result) ->
         if result.DeploymentId
           msg.send "デプロイするよ #{face.success} https://console.aws.amazon.com/opsworks/home?#/stack/#{app.StackId}/deployments/#{result.DeploymentId}"
@@ -32,7 +35,10 @@ module.exports = (robot) ->
     app = msg.match[1]
     num = msg.match[2]
     num -= 1 if num
-    OpsWorks.use(app).then (app) ->
+    OpsWorks.use(app)
+    .fail (err) ->
+      msg.send "エラーですぅ #{face.failure} #{err.message}"
+    .then (app) ->
       app.deployStatus(num).then (deploys) ->
         for deploy in deploys
           trans = {
