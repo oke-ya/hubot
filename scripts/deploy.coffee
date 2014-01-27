@@ -55,7 +55,7 @@ module.exports = (robot) ->
   robot.respond /ADMIN (.*)$/i, (msg) ->
     app = msg.match[1]
     unless process.env["HUBOT_PRIVATE_KEY"]
-      msg.send "秘密鍵が設定されてません #{face.failure}"
+      msg.send "秘密鍵が設定されてない #{face.failure}"
       return
     
     OpsWorks.use(app)
@@ -66,10 +66,10 @@ module.exports = (robot) ->
         instance = _.find instances, (instance) -> instance.Status == 'online'
         session = new ssh()
         session.on 'ready', () ->
-          session.exec "cd /srv/www/#{app.Name}/current && nohup bundle exec rails s", (err, stream) ->
+          session.exec "cd /srv/www/#{app.Name}/current && nohup bundle exec rails s", {pty: true}, (err, stream) ->
             stream.on 'data', (data, extended) ->
-              console.log extended
-              console.log data.toString()
+              if data.toString().match(/nohup/)
+                stream.end()
             stream.on 'close', () ->
               msg.send "$ ssh -N -L 8888:localhost:3000 deploy@#{instance.PublicIp} を起動して"
               msg.send "http://localhost:8888/admin にアクセスだ! （｀・ω・´）"
@@ -81,7 +81,3 @@ module.exports = (robot) ->
           port: 22
           username: 'deploy'
           privateKey: process.env["HUBOT_PRIVATE_KEY"]
-
-        
-    
-
