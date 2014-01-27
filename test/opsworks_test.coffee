@@ -18,10 +18,19 @@ describe "OpsWorks", ->
   #         app.deploy()
   #         done()
 
-  describe "#deployStagus", ->
+  # describe "#deployStagus", ->
+  #   it "should describe status", (done) ->
+  #     OpsWorks.use("zeroshiki-stg")
+  #       .then (app) ->
+  #         app.deployStatus().then (deploys) ->
+  #           assert.equal 'successful', deploys[0].Status
+  #           done()
+
+  describe "#instances", ->
     it "should describe status", (done) ->
       OpsWorks.use("zeroshiki-stg")
         .then (app) ->
-          app.deployStatus().then (deploys) ->
-            assert.equal 'successful', deploys[0].Status
+          app.instances().then (instances) ->
+            console.log instances
+            assert.equal 1, instances.length
             done()

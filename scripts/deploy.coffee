@@ -5,6 +5,7 @@
 #   hubot apps - Display app names.
 #   hubot deploy <app> - Create deployment on OpsWorks.
 #   hubot deploy-status <app> (num) - Show deployment status latest num number(default is 1).
+#   hubot admin <app> - Invoke admin server on the app.
 
 OpsWorks = require("../lib/opsworks")
 
@@ -47,3 +48,14 @@ module.exports = (robot) ->
             failed:     "失敗しちゃった #{face.failure}"}
           status = trans[deploy.Status]
           msg.send "#{status} https://console.aws.amazon.com/opsworks/home?#/stack/#{deploy.StackId}/deployments/#{deploy.DeploymentId}"
+
+
+  robot.respond /ADMIN (.*)$/i, (msg) ->
+    app = msg.match[1]
+    OpsWorks.use(app)
+    .fail (err) ->
+      msg.send "エラーですぅ #{face.failure} #{err.message}"
+    .then (app) ->
+      app.instances()
+    
+

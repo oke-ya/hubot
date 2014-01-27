@@ -68,8 +68,20 @@ class OpsWorks
     num ?= 0
     deferred = Q.defer()
     OpsWorks.api.describeDeployments {AppId: @AppId}, (err, data) ->
-      deferred.reject err if err
-      deferred.resolve data["Deployments"][0..num]
+      if err
+        deferred.reject err
+      else
+        deferred.resolve data["Deployments"][0..num]
+    deferred.promise
+
+  instances: () ->
+    deferred = Q.defer()
+    OpsWorks.api.describeInstances {StackId: @StackId}, (err, data) ->
+      if err
+        deferred.reject err
+      else
+        deferred.resolve data["Instances"]
+      
     deferred.promise
 
 module.exports = OpsWorks
