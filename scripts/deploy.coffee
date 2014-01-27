@@ -54,6 +54,10 @@ module.exports = (robot) ->
 
   robot.respond /ADMIN (.*)$/i, (msg) ->
     app = msg.match[1]
+    unless process.env["HUBOT_PRIVATE_KEY"]
+      msg.send "秘密鍵が設定されてません #{face.failure}"
+      return
+    
     OpsWorks.use(app)
     .fail (err) ->
       msg.send "エラーですぅ #{face.failure} #{err.message}"
@@ -69,6 +73,8 @@ module.exports = (robot) ->
             stream.on 'close', () ->
               msg.send "$ ssh -N -L 8888:localhost:3000 deploy@#{instance.PublicIp} を起動して"
               msg.send "http://localhost:8888/admin にアクセスだ! （｀・ω・´）"
+        session.on 'error', () ->
+          msg.send "SSHでエラーっす #{face.failure}"
 
         session.connect
           host: instance.PublicIp
