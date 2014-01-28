@@ -66,9 +66,11 @@ module.exports = (robot) ->
         instance = _.find instances, (instance) -> instance.Status == 'online'
         session = new ssh()
         session.on 'ready', () ->
-          session.exec "cd /srv/www/#{app.Name}/current && nohup bundle exec rails s", {pty: true}, (err, stream) ->
+          session.exec "env > /tmp/env.txt && cd /srv/www/#{app.Name}/current && RAILS_ENV=staging nohup  bundle exec rails s", {pty: true}, (err, stream) ->
             stream.on 'data', (data, extended) ->
-              if data.toString().match(/nohup/)
+              result = data.toString()
+              console.log result
+              if result.match(/nohup/)
                 stream.end()
             stream.on 'close', () ->
               msg.send "$ ssh -N -L 8888:localhost:3000 deploy@#{instance.PublicIp} を起動して"
