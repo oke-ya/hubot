@@ -66,7 +66,9 @@ module.exports = (robot) ->
         instance = _.find instances, (instance) -> instance.Status == 'online'
         session = new ssh()
         session.on 'ready', () ->
-          session.exec "env > /tmp/env.txt && cd /srv/www/#{app.Name}/current && RAILS_ENV=staging nohup  bundle exec rails s", {pty: true}, (err, stream) ->
+          rails_env = if app.Name.match(/stg/) then "staging" else "production"
+
+          session.exec "cd /srv/www/#{app.Name}/current && RAILS_ENV=#{rails_env} ALLOW_ADMIN=1 nohup bundle exec rails s", {pty: true}, (err, stream) ->
             stream.on 'data', (data, extended) ->
               result = data.toString()
               console.log result
