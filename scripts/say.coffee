@@ -11,3 +11,7 @@ module.exports = (robot) ->
 
   robot.respond /\^\^/i, (msg) ->
     msg.send "∩( ・ω・)∩ばんじゃーい"
+
+  robot.respond /\-\-/i, (msg) ->
+    msg.send "(。-`ω-)ンー"
+
