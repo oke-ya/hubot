@@ -67,16 +67,25 @@ module.exports = (robot) ->
         session = new ssh()
         session.on 'ready', () ->
           rails_env = if app.Name.match(/stg/) then "staging" else "production"
-
-          session.exec "cd /srv/www/#{app.Name}/current && RAILS_ENV=#{rails_env} ALLOW_ADMIN=1 nohup bundle exec rails s", {pty: true}, (err, stream) ->
+          cmd = """
+          SERVER_PROCESS=$(ps ax | grep ruby | grep rails | grep -v bash | awk '{print $1}')
+          if [ -n "$SERVER_PROCESS" ];then
+            kill $SERVER_PROCESS
+          fi
+          cd /srv/www/#{app.Name}/current
+          RAILS_ENV=#{rails_env} ALLOW_ADMIN=1 nohup bundle exec rails s
+          """
+          session.exec cmd, {pty: true}, (err, stream) ->
             stream.on 'data', (data, extended) ->
               result = data.toString()
               console.log result
-              if result.match(/nohup/)
-                stream.end()
+              stream.end() if result.match(/nohup/)
             stream.on 'close', () ->
-              msg.send "$ ssh -N -L 8888:localhost:3000 deploy@#{instance.PublicIp} を起動して"
-              msg.send "http://localhost:8888/admin にアクセスだ! （｀・ω・´）"
+              voice = """
+              $ ssh -N -L 8888:localhost:3000 deploy@#{instance.PublicIp} を起動して
+              http://localhost:8888/admin にアクセスだ! （｀・ω・´）
+              """
+              msg.send voice
         session.on 'error', () ->
           msg.send "SSHでエラーっす #{face.failure}"
 
