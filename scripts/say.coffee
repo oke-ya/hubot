@@ -18,3 +18,6 @@ module.exports = (robot) ->
   robot.respond /.*いってきます/i, (msg) ->
     msg.send "いってらっしゃい(｀・ω・)ノシ"
 
+  robot.respond /oo/i, (msg) ->
+    msg.send "ヾ(*゜ο゜)ノオォォォォーーー！！すごい!!"
+
