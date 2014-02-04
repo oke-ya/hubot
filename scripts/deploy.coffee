@@ -78,9 +78,11 @@ module.exports = (robot) ->
           session.exec cmd, {pty: true}, (err, stream) ->
             stream.on 'data', (data, extended) ->
               result = data.toString()
-              console.log result
-              stream.end() if result.match(/nohup/)
-            stream.on 'close', () ->
+#              console.log result
+              if result.match(/nohup\.out/)
+                console.log "nohup.out"
+                stream.destroy()
+            stream.on 'end', () ->
               voice = """
               $ ssh -N -L 8888:localhost:3000 deploy@#{instance.PublicIp} を起動して
               http://localhost:8888/admin にアクセスだ! （｀・ω・´）
