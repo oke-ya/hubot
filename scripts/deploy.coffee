@@ -6,6 +6,8 @@
 #   hubot deploy <app> - Create deployment on OpsWorks.
 #   hubot deploy-status <app> (num) - Show deployment status latest num number(default is 1).
 #   hubot admin <app> - Invoke admin server on the app.
+#   hubot maintenance on <app> - Turn on maintenance mode
+#   hubot maintenance off <app> - Turn off maintenance mode 
 
 OpsWorks = require("../lib/opsworks")
 ssh      = require('ssh2')
@@ -72,35 +74,43 @@ module.exports = (robot) ->
       privateKey: process.env["HUBOT_PRIVATE_KEY"]
     deferred.promise
 
-  robot.respond /ADMIN (.*)$/i, (msg) ->
+  robot.respond /maintenance on (.*)$/i, (msg) ->
     app = msg.match[1]
     unless process.env["HUBOT_PRIVATE_KEY"]
       msg.send "秘密鍵が設定されてない #{face.failure}"
       return
-    
+
     OpsWorks.use(app)
     .fail (err) ->
       msg.send "エラーですぅ #{face.failure} #{err.message}"
     .then (app) ->
       app.instances().then (instances) ->
-        instance = _.find instances, (instance) -> instance.Status == 'online'
-        railsEnv = if app.Name.match(/stg/) then "staging" else "production"
-        cmd = """
-        SERVER_PROCESS=$(ps ax | grep ruby | grep rails | grep -v bash | awk '{print $1}')
-        if [ -n "$SERVER_PROCESS" ];then
-          kill $SERVER_PROCESS
-        fi
-        cd /srv/www/#{app.Name}/current
-        RAILS_ENV=#{railsEnv} ALLOW_ADMIN=1 nohup bundle exec rails s
-        """
+        cmd = "touch /srv/www/#{app.Name}/maintenance"
+        for instance in instances
+          continue if instance.Status != 'online'
         
-        run_ssh(instance, cmd, (result) -> result.match(/nohup\.out/))
-          .done () ->
-            voice = """
-            $ ssh -N -L 8888:localhost:3000 deploy@#{instance.PublicIp} を起動して
-            http://localhost:8888/admin にアクセスだ! （｀・ω・´）
-            """
-            msg.send voice
-          .fail () ->
-            msg.send "SSHでエラーっす #{face.failure}"
+          run_ssh(instance, cmd, (result) -> result.match(/nohup\.out/))
+            .done () ->
+              msg.send "#{instance.Hostname} メンテナンス ✧＼\ ٩( 'ω' )و /／✧ オン!!"
+            .fail () ->
+              msg.send "SSHでエラーっす #{face.failure}"
           
+  robot.respond /maintenance off (.*)$/i, (msg) ->
+    app = msg.match[1]
+    unless process.env["HUBOT_PRIVATE_KEY"]
+      msg.send "秘密鍵が設定されてない #{face.failure}"
+      return
+
+    OpsWorks.use(app)
+    .fail (err) ->
+      msg.send "エラーですぅ #{face.failure} #{err.message}"
+    .then (app) ->
+      app.instances().then (instances) ->
+        cmd = "rm -f /srv/www/#{app.Name}/maintenance"
+        for instance in instances
+          continue if instance.Status != 'online'
+          run_ssh(instance, cmd, (result) -> result.match(/nohup\.out/))
+            .done () ->
+              msg.send "#{instance.Hostname} メンテナンス (｡´-д-) オフ!!"
+            .fail () ->
+              msg.send "SSHでエラーっす #{face.failure}"
