@@ -10,6 +10,7 @@
 OpsWorks = require("../lib/opsworks")
 ssh      = require('ssh2')
 _        = require('underscore')
+Q        = require('q')
 
 module.exports = (robot) ->
   face = {
@@ -51,6 +52,25 @@ module.exports = (robot) ->
           status = trans[deploy.Status]
           msg.send "#{status} https://console.aws.amazon.com/opsworks/home?#/stack/#{deploy.StackId}/deployments/#{deploy.DeploymentId}"
 
+  run_ssh = (instance, cmd, finishCondition) ->
+    deferred = Q.defer()    
+    session = new ssh()
+    session.on 'ready', () ->
+      session.exec cmd, {pty: true}, (err, stream) ->
+        stream.on 'data', (data, extended) ->
+          result = data.toString()
+          if finishCondition(result)
+            stream.destroy() 
+        stream.on 'end', () ->
+          deferred.resolve()
+    session.on 'error', () ->
+      deferred.reject()
+    session.connect
+      host: instance.PublicIp
+      port: 22
+      username: 'deploy'
+      privateKey: process.env["HUBOT_PRIVATE_KEY"]
+    deferred.promise
 
   robot.respond /ADMIN (.*)$/i, (msg) ->
     app = msg.match[1]
@@ -64,35 +84,23 @@ module.exports = (robot) ->
     .then (app) ->
       app.instances().then (instances) ->
         instance = _.find instances, (instance) -> instance.Status == 'online'
-        session = new ssh()
-        session.on 'ready', () ->
-          rails_env = if app.Name.match(/stg/) then "staging" else "production"
-          cmd = """
-          SERVER_PROCESS=$(ps ax | grep ruby | grep rails | grep -v bash | awk '{print $1}')
-          if [ -n "$SERVER_PROCESS" ];then
-            kill $SERVER_PROCESS
-          fi
-          cd /srv/www/#{app.Name}/current
-          RAILS_ENV=#{rails_env} ALLOW_ADMIN=1 nohup bundle exec rails s
-          """
-          session.exec cmd, {pty: true}, (err, stream) ->
-            stream.on 'data', (data, extended) ->
-              result = data.toString()
-#              console.log result
-              if result.match(/nohup\.out/)
-                console.log "nohup.out"
-                stream.destroy()
-            stream.on 'end', () ->
-              voice = """
-              $ ssh -N -L 8888:localhost:3000 deploy@#{instance.PublicIp} を起動して
-              http://localhost:8888/admin にアクセスだ! （｀・ω・´）
-              """
-              msg.send voice
-        session.on 'error', () ->
-          msg.send "SSHでエラーっす #{face.failure}"
-
-        session.connect
-          host: instance.PublicIp
-          port: 22
-          username: 'deploy'
-          privateKey: process.env["HUBOT_PRIVATE_KEY"]
+        railsEnv = if app.Name.match(/stg/) then "staging" else "production"
+        cmd = """
+        SERVER_PROCESS=$(ps ax | grep ruby | grep rails | grep -v bash | awk '{print $1}')
+        if [ -n "$SERVER_PROCESS" ];then
+          kill $SERVER_PROCESS
+        fi
+        cd /srv/www/#{app.Name}/current
+        RAILS_ENV=#{railsEnv} ALLOW_ADMIN=1 nohup bundle exec rails s
+        """
+        
+        run_ssh(instance, cmd, (result) -> result.match(/nohup\.out/))
+          .done () ->
+            voice = """
+            $ ssh -N -L 8888:localhost:3000 deploy@#{instance.PublicIp} を起動して
+            http://localhost:8888/admin にアクセスだ! （｀・ω・´）
+            """
+            msg.send voice
+          .fail () ->
+            msg.send "SSHでエラーっす #{face.failure}"
+          
