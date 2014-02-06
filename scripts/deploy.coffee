@@ -109,7 +109,7 @@ module.exports = (robot) ->
         cmd = "rm -f /srv/www/#{app.Name}/maintenance"
         for instance in instances
           continue if instance.Status != 'online'
-          run_ssh(instance, cmd, (result) -> result.match(/nohup\.out/))
+          run_ssh(instance, cmd, (result) -> true)
             .done () ->
               msg.send "#{instance.Hostname} メンテナンス (｡´-д-) オフ!!"
             .fail () ->
