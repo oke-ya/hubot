@@ -89,7 +89,7 @@ module.exports = (robot) ->
         for instance in instances
           continue if instance.Status != 'online'
         
-          run_ssh(instance, cmd, (result) -> result.match(/nohup\.out/))
+          run_ssh(instance, cmd, (result) -> true)
             .done () ->
               msg.send "#{instance.Hostname} メンテナンス ✧＼\ ٩( 'ω' )و /／✧ オン!!"
             .fail () ->
@@ -114,3 +114,33 @@ module.exports = (robot) ->
               msg.send "#{instance.Hostname} メンテナンス (｡´-д-) オフ!!"
             .fail () ->
               msg.send "SSHでエラーっす #{face.failure}"
+
+  robot.respond /ADMIN (.*)$/i, (msg) ->
+     app = msg.match[1]
+     unless process.env["HUBOT_PRIVATE_KEY"]
+       msg.send "秘密鍵が設定されてない #{face.failure}"
+       return
+     OpsWorks.use(app)
+     .fail (err) ->
+       msg.send "エラーですぅ #{face.failure} #{err.message}"
+     .then (app) ->
+       app.instances().then (instances) ->
+         instance = _.find instances, (instance) -> instance.Status == 'online'
+         railsEnv = if app.Name.match(/stg/) then "staging" else "production"
+         cmd = """
+           SERVER_PROCESS=$(ps ax | grep ruby | grep rails | grep -v bash | awk '{
+           if [ -n "$SERVER_PROCESS" ];then
+             kill $SERVER_PROCESS
+           fi
+           cd /srv/www/#{app.Name}/current
+           RAILS_ENV=#{railsEnv} ALLOW_ADMIN=1 nohup bundle exec rails s
+         """
+         run_ssh(instance, cmd, (result) -> result.match(/nohup\.out/))
+           .done () ->
+             voice = """
+             $ ssh -N -L 8888:localhost:3000 deploy@#{instance.PublicIp} を起動
+             http://localhost:8888/admin にアクセスだ! （｀・ω・´）
+             """
+             msg.send voice
+           .fail () ->
+             msg.send "SSHでエラーっす #{face.failure}"        
