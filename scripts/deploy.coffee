@@ -64,6 +64,7 @@ module.exports = (robot) ->
           if finishCondition(result)
             stream.destroy() 
         stream.on 'end', () ->
+          session.end()
           deferred.resolve()
     session.on 'error', () ->
       deferred.reject()
@@ -88,12 +89,14 @@ module.exports = (robot) ->
         cmd = "touch /srv/www/#{app.Name}/maintenance"
         for instance in instances
           continue if instance.Status != 'online'
-        
+          success = 0
           run_ssh(instance, cmd, (result) -> true)
-            .done () ->
-              msg.send "#{instance.Hostname} メンテナンス ✧＼\ ٩( 'ω' )و /／✧ オン!!"
+            .then () ->
+              success += 1
+              if instances.length == success
+                msg.send "メンテナンス ✧＼\ ٩( 'ω' )و /／✧ オン!!"
             .fail () ->
-              msg.send "SSHでエラーっす #{face.failure}"
+              msg.send "#{instance.Hostname}でSSHでエラーですぅ #{face.failure}"
           
   robot.respond /maintenance off (.*)$/i, (msg) ->
     app = msg.match[1]
@@ -107,13 +110,15 @@ module.exports = (robot) ->
     .then (app) ->
       app.instances().then (instances) ->
         cmd = "rm -f /srv/www/#{app.Name}/maintenance"
+        success = 0
         for instance in instances
           continue if instance.Status != 'online'
           run_ssh(instance, cmd, (result) -> true)
-            .done () ->
-              msg.send "#{instance.Hostname} メンテナンス (｡´-д-) オフ!!"
+            .then () ->
+              success += 1
+              msg.send "メンテナンス (｡´-д-) オフ!!" if instances.length == success
             .fail () ->
-              msg.send "SSHでエラーっす #{face.failure}"
+              msg.send "#{instance.Hostname}でSSHでエラーですぅ #{face.failure}"
 
   robot.respond /ADMIN (.*)$/i, (msg) ->
      app = msg.match[1]
