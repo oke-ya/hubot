@@ -64,8 +64,8 @@ module.exports = (robot) ->
           if finishCondition(result)
             stream.destroy() 
         stream.on 'end', () ->
-          session.end()
           deferred.resolve()
+          session.end()
     session.on 'error', () ->
       deferred.reject()
     session.connect
