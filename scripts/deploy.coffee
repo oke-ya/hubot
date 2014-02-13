@@ -133,7 +133,7 @@ module.exports = (robot) ->
          instance = _.find instances, (instance) -> instance.Status == 'online'
          railsEnv = if app.Name.match(/stg/) then "staging" else "production"
          cmd = """
-           SERVER_PROCESS=$(ps ax | grep ruby | grep rails | grep -v bash | awk '{
+           SERVER_PROCESS=$(ps ax | grep ruby | grep rails | grep -v bash |  awk '{print $1}')
            if [ -n "$SERVER_PROCESS" ];then
              kill $SERVER_PROCESS
            fi
