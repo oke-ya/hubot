@@ -6,6 +6,7 @@
 #   hubot deploy <app> - Create deployment on OpsWorks.
 #   hubot deploy-status <app> (num) - Show deployment status latest num number(default is 1).
 #   hubot admin <app> - Invoke admin server on the app.
+#   hubot dump  <app> - MySQL dump on the app.
 #   hubot maintenance on <app> - Turn on maintenance mode
 #   hubot maintenance off <app> - Turn off maintenance mode 
 
@@ -141,3 +142,30 @@ module.exports = (robot) ->
              msg.send voice
            .fail () ->
              msg.send "SSHでエラーっす #{face.failure}"        
+
+  robot.respond /dump (.*)$/i, (msg) ->
+     app = msg.match[1]
+     dump_path="/home/deploy/#{app}.dump"
+     OpsWorks.use(app)
+     .fail (err) ->
+       msg.send "エラーですぅ #{face.failure} #{err.message}"
+     .then (app) ->
+       app.instances().then (instances) ->
+         instance = _.find instances, (instance) -> instance.Status == 'online'
+         railsEnv = if app.Name.match(/stg/) then "staging" else "production"
+         cmd = """
+           YAML=$(cat /srv/www/#{app.Name}/current/config/database.yml)
+           HOST=$(echo "$YAML" | grep host: | head -1 | awk '{print $2}' | sed -e 's/"//g')
+           USER=$(echo "$YAML" | grep username: | head -1 | awk '{print $2}' | sed -e 's/"//g')
+           PASS=$(echo "$YAML" | grep password: | head -1 | awk '{print $2}' | sed -e 's/"//g')
+           DB=$(echo "$YAML" | grep database: | head -1 | awk '{print $2}' | sed -e 's/"//g')
+           mysqldump -h "$HOST" -u "$USER" --password="$PASS" "$DB" > #{dump_path}
+         """
+         run_ssh(instance, cmd, (result) -> result.match(/nohup\.out/))
+           .done () ->
+             voice = """
+               $ rsync -avz -e ssh deploy@#{instance.PublicIp}:#{dump_path} . でデータ取得できるよー#{face.success}
+             """
+             msg.send voice
+           .fail () ->
+             msg.send "SSHでエラーっす #{face.failure}"
