@@ -14,6 +14,9 @@ ssh      = require('ssh2')
 _        = require('underscore')
 Q        = require('q')
 
+unless process.env["HUBOT_PRIVATE_KEY"]
+  throw 'env["HUBOT_PRIVATE_KEY"]が設定されていません'
+
 module.exports = (robot) ->
   face = {
     normal:  '(´-ω-)'
@@ -77,10 +80,6 @@ module.exports = (robot) ->
 
   robot.respond /maintenance on (.*)$/i, (msg) ->
     app = msg.match[1]
-    unless process.env["HUBOT_PRIVATE_KEY"]
-      msg.send "秘密鍵が設定されてない #{face.failure}"
-      return
-
     OpsWorks.use(app)
     .fail (err) ->
       msg.send "エラーですぅ #{face.failure} #{err.message}"
@@ -100,10 +99,6 @@ module.exports = (robot) ->
           
   robot.respond /maintenance off (.*)$/i, (msg) ->
     app = msg.match[1]
-    unless process.env["HUBOT_PRIVATE_KEY"]
-      msg.send "秘密鍵が設定されてない #{face.failure}"
-      return
-
     OpsWorks.use(app)
     .fail (err) ->
       msg.send "エラーですぅ #{face.failure} #{err.message}"
@@ -122,9 +117,6 @@ module.exports = (robot) ->
 
   robot.respond /ADMIN (.*)$/i, (msg) ->
      app = msg.match[1]
-     unless process.env["HUBOT_PRIVATE_KEY"]
-       msg.send "秘密鍵が設定されてない #{face.failure}"
-       return
      OpsWorks.use(app)
      .fail (err) ->
        msg.send "エラーですぅ #{face.failure} #{err.message}"
