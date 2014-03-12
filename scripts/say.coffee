@@ -27,6 +27,9 @@ module.exports = (robot) ->
   robot.respond /ただいま[-ー]/i, (msg) ->
     msg.send "(*´ー｀)ﾉおかえりなさ～ぃ"
     
-
   robot.respond />>$/i, (msg) ->
     msg.send "(っ`･ω･´)っﾌﾚｰﾌﾚｰ!!!"
+
+  robot.respond /``$/i, (msg) ->
+    msg.send "(ノ｀Д´)ノ彡┻━┻"
+
