@@ -1,7 +1,14 @@
+fs   = require('fs')
+path = require('path')
+
 _   = require('underscore')
 AWS = require('aws-sdk')
 Q   = require('q')
 ENV = process.env
+
+fs.exists path.resolve(__dirname, '../.env'), (b) ->
+  require('dotenv').load() if b
+  ENV = process.env
 
 AWS.config.update(accessKeyId:     ENV['AWS_ACCESS_KEY_ID'],
                   secretAccessKey: ENV['AWS_SECRET_ACCESS_KEY'])
