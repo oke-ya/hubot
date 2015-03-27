@@ -60,7 +60,7 @@ class OpsWorks
 
   deploy: () ->
     deferred = Q.defer()
-    unless @StackId
+    unless @stackName
       deferred.reject(new Error("stackID is missing"))
       return
     params = {AppId: @AppId, StackId: @StackId, Command: {Name: 'deploy'}}
@@ -90,5 +90,32 @@ class OpsWorks
         deferred.resolve data["Instances"]
       
     deferred.promise
+
+  detachELB: () ->
+    deferred = Q.defer()
+    OpsWorks.api.describeElasticLoadBalancers {StackId: @StackId}, (err, response) ->
+      elb = response["ElasticLoadBalancers"][0]
+      deferred.resolve() unless elb
+      args = {"ElasticLoadBalancerName": elb["ElasticLoadBalancerName"], "LayerId": elb["LayerId"]}
+      OpsWorks.api.detachElasticLoadBalancer args, (err, response) ->
+        if err
+          deferred.reject err
+        else
+          deferred.resolve(response)
+    deferred.promise
+    
+  attachELB: () ->
+    [name, env] = @Name.split("-")
+    elbName = if env == "stg" then "#{name}-staging-http"  else "#{name}-production-http"
+    deferred = Q.defer()
+    
+    OpsWorks.api.describeLayers {StackId: @StackId}, (err, response) ->
+      layer = _.find response["Layers"], (l) -> l["Type"] == "rails-app"
+      OpsWorks.api.attachElasticLoadBalancer {ElasticLoadBalancerName: elbName, LayerId: layer["LayerId"]}, (err, response) ->
+          if err
+            deferred.reject err
+          else
+            deferred.resolve(response)
+    deferred.promise    
 
 module.exports = OpsWorks

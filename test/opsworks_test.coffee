@@ -1,4 +1,5 @@
 # FIXME webmock
+
 assert   = require("assert")
 OpsWorks = require('../lib/opsworks')
 
@@ -26,11 +27,25 @@ describe "OpsWorks", ->
   #           assert.equal 'successful', deploys[0].Status
   #           done()
 
-  describe "#instances", ->
-    it "should describe status", (done) ->
-      OpsWorks.use("zeroshiki-stg")
-        .then (app) ->
-          app.instances().then (instances) ->
-            console.log instances
-            assert.equal 1, instances.length
-            done()
+  # describe "#instances", ->
+  #   it "should describe status", (done) ->
+  #     OpsWorks.use("zeroshiki-stg")
+  #       .then (app) ->
+  #         app.instances().then (instances) ->
+  #           console.log instances
+  #           assert.equal 1, instances.length
+  #           done()
+
+  # describe "#detachELB", ->
+  #   it "should deatch ELB", (done) ->
+  #     OpsWorks.use("witch-stg")
+  #       .then (app) ->
+  #         app.detachELB().then (response) ->
+  #           console.log response
+
+  # describe "#attachELB", ->
+  #   it "should attach ELB", (done) ->
+  #     OpsWorks.use("witch-stg")
+  #       .then (app) ->
+  #         app.attachELB().then (response) ->
+  #           console.log response
