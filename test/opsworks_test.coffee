@@ -43,9 +43,9 @@ describe "OpsWorks", ->
   #         app.detachELB().then (response) ->
   #           console.log response
 
-  # describe "#attachELB", ->
-  #   it "should attach ELB", (done) ->
-  #     OpsWorks.use("witch-stg")
-  #       .then (app) ->
-  #         app.attachELB().then (response) ->
-  #           console.log response
+  describe "#attachELB", ->
+    it "should attach ELB", (done) ->
+      OpsWorks.use("witch-stg")
+        .then (app) ->
+          app.attachELB().then (response) ->
+            console.log response

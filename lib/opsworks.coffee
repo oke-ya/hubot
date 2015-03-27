@@ -15,7 +15,7 @@ AWS.config.update(accessKeyId:     ENV['AWS_ACCESS_KEY_ID'],
 
 class OpsWorks
   @api = new AWS.OpsWorks(region: "us-east-1");
-
+  
   @getStacks = () ->
     deferred = Q.defer()
     if OpsWorks.stacks
@@ -92,30 +92,33 @@ class OpsWorks
     deferred.promise
 
   detachELB: () ->
-    deferred = Q.defer()
-    OpsWorks.api.describeElasticLoadBalancers {StackId: @StackId}, (err, response) ->
-      elb = response["ElasticLoadBalancers"][0]
-      deferred.resolve() unless elb
-      args = {"ElasticLoadBalancerName": elb["ElasticLoadBalancerName"], "LayerId": elb["LayerId"]}
-      OpsWorks.api.detachElasticLoadBalancer args, (err, response) ->
+    [name, env] = @Name.split("-")
+    elbName = if env == "stg" then "#{name}-staging-http"  else "#{name}-production-http"
+    elbAPI = new AWS.ELB(region: ENV["AWS_REGION"])
+    elbAPI.describeLoadBalancers (err, response) ->
+      elb = _.find response["LoadBalancerDescriptions"], (elb) -> elb["LoadBalancerName"] == elbName
+      arg = {LoadBalancerName: elbName, Instances: elb["Instances"]}
+      elbAPI.deregisterInstancesFromLoadBalancer arg, (err, respose) ->
         if err
           deferred.reject err
         else
           deferred.resolve(response)
+    deferred = Q.defer()
     deferred.promise
     
   attachELB: () ->
     [name, env] = @Name.split("-")
     elbName = if env == "stg" then "#{name}-staging-http"  else "#{name}-production-http"
     deferred = Q.defer()
-    
-    OpsWorks.api.describeLayers {StackId: @StackId}, (err, response) ->
-      layer = _.find response["Layers"], (l) -> l["Type"] == "rails-app"
-      OpsWorks.api.attachElasticLoadBalancer {ElasticLoadBalancerName: elbName, LayerId: layer["LayerId"]}, (err, response) ->
-          if err
-            deferred.reject err
-          else
-            deferred.resolve(response)
+    elbAPI = new AWS.ELB(region: ENV["AWS_REGION"])
+    console.log ENV["AWS_REGION"]
+    OpsWorks.api.describeInstances {StackId: @StackId}, (err, response) ->
+      instances = _.map response["Instances"], (i) -> {InstanceId: i["Ec2InstanceId"]}
+      elbAPI.registerInstancesWithLoadBalancer {"LoadBalancerName": elbName, Instances: instances}, (err, response) ->
+        if err
+          deferred.reject err
+        else
+          deferred.resolve(response)        
     deferred.promise    
 
 module.exports = OpsWorks
