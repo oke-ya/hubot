@@ -89,6 +89,7 @@ module.exports = (robot) ->
       app.detachELB()
       .then (response) -> msg.send "メンテナンス ✧＼\ ٩( 'ω' )و /／✧ オン!!"
       .fail (response) -> msg.send "何かエラーでした orz\n#{response}"
+      .done () -> msg.send "処理しゅーりょー"
           
   robot.respond /maintenance off (.*)$/i, (msg) ->
     app = msg.match[1]
@@ -99,6 +100,8 @@ module.exports = (robot) ->
       app.attachELB()
       .then (response) -> msg.send "メンテナンス (｡´-д-) オフ!!"
       .fail (response) -> msg.send "何かエラーでした orz\n#{response}"
+      .done () -> msg.send "処理しゅーりょー"
+
   robot.respond /ADMIN (.*)$/i, (msg) ->
      app = msg.match[1]
      OpsWorks.use(app)
