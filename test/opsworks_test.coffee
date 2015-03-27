@@ -36,16 +36,16 @@ describe "OpsWorks", ->
   #           assert.equal 1, instances.length
   #           done()
 
-  # describe "#detachELB", ->
-  #   it "should deatch ELB", (done) ->
-  #     OpsWorks.use("witch-stg")
-  #       .then (app) ->
-  #         app.detachELB().then (response) ->
-  #           console.log response
-
-  describe "#attachELB", ->
-    it "should attach ELB", (done) ->
+  describe "#detachELB", ->
+    it "should deatch ELB", (done) ->
       OpsWorks.use("witch-stg")
         .then (app) ->
-          app.attachELB().then (response) ->
+          app.detachELB().then (response) ->
             console.log response
+
+  # describe "#attachELB", ->
+  #   it "should attach ELB", (done) ->
+  #     OpsWorks.use("witch-stg")
+  #       .then (app) ->
+  #         app.attachELB().then (response) ->
+  #           console.log response

@@ -95,6 +95,7 @@ class OpsWorks
     [name, env] = @Name.split("-")
     elbName = if env == "stg" then "#{name}-staging-http"  else "#{name}-production-http"
     elbAPI = new AWS.ELB(region: ENV["AWS_REGION"])
+    deferred = Q.defer()
     elbAPI.describeLoadBalancers (err, response) ->
       elb = _.find response["LoadBalancerDescriptions"], (elb) -> elb["LoadBalancerName"] == elbName
       arg = {LoadBalancerName: elbName, Instances: elb["Instances"]}
@@ -103,7 +104,7 @@ class OpsWorks
           deferred.reject err
         else
           deferred.resolve(response)
-    deferred = Q.defer()
+
     deferred.promise
     
   attachELB: () ->
@@ -111,14 +112,13 @@ class OpsWorks
     elbName = if env == "stg" then "#{name}-staging-http"  else "#{name}-production-http"
     deferred = Q.defer()
     elbAPI = new AWS.ELB(region: ENV["AWS_REGION"])
-    console.log ENV["AWS_REGION"]
     OpsWorks.api.describeInstances {StackId: @StackId}, (err, response) ->
       instances = _.map response["Instances"], (i) -> {InstanceId: i["Ec2InstanceId"]}
       elbAPI.registerInstancesWithLoadBalancer {"LoadBalancerName": elbName, Instances: instances}, (err, response) ->
         if err
           deferred.reject err
         else
-          deferred.resolve(response)        
+          deferred.resolve(response)
     deferred.promise    
 
 module.exports = OpsWorks

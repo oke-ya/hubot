@@ -81,41 +81,24 @@ module.exports = (robot) ->
 
   robot.respond /maintenance on (.*)$/i, (msg) ->
     app = msg.match[1]
+
     OpsWorks.use(app)
     .fail (err) ->
       msg.send "エラーですぅ #{face.failure} #{err.message}"
     .then (app) ->
-      app.instances().then (instances) ->
-        cmd = "touch /srv/www/#{app.Name}/maintenance"
-        for instance in instances
-          continue if instance.Status != 'online'
-          success = 0
-          run_ssh(instance, cmd, (result) -> true)
-            .then () ->
-              success += 1
-              if instances.length == success
-                msg.send "メンテナンス ✧＼\ ٩( 'ω' )و /／✧ オン!!"
-            .fail () ->
-              msg.send "#{instance.Hostname}でSSHでエラーですぅ #{face.failure}"
+      app.detachELB()
+      .then (response) -> msg.send "メンテナンス ✧＼\ ٩( 'ω' )و /／✧ オン!!"
+      .fail (response) -> msg.send "何かエラーでした orz\n#{response}"
           
   robot.respond /maintenance off (.*)$/i, (msg) ->
     app = msg.match[1]
-    OpsWorks.use(app)
+    o = OpsWorks.use(app)
     .fail (err) ->
       msg.send "エラーですぅ #{face.failure} #{err.message}"
     .then (app) ->
-      app.instances().then (instances) ->
-        cmd = "rm -f /srv/www/#{app.Name}/maintenance"
-        success = 0
-        for instance in instances
-          continue if instance.Status != 'online'
-          run_ssh(instance, cmd, (result) -> true)
-            .then () ->
-              success += 1
-              msg.send "メンテナンス (｡´-д-) オフ!!" if instances.length == success
-            .fail () ->
-              msg.send "#{instance.Hostname}でSSHでエラーですぅ #{face.failure}"
-
+      app.attachELB()
+      .then (response) -> msg.send "メンテナンス (｡´-д-) オフ!!"
+      .fail (response) -> msg.send "何かエラーでした orz\n#{response}"
   robot.respond /ADMIN (.*)$/i, (msg) ->
      app = msg.match[1]
      OpsWorks.use(app)
