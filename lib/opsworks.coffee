@@ -60,7 +60,7 @@ class OpsWorks
 
   deploy: () ->
     deferred = Q.defer()
-    unless @stackName
+    unless @StackId
       deferred.reject(new Error("stackID is missing"))
       return
     params = {AppId: @AppId, StackId: @StackId, Command: {Name: 'deploy'}}
